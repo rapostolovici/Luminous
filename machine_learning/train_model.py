@@ -31,7 +31,7 @@ for class_id, class_name in labels.items():
     print(f"{class_id}: {class_name}")
 
     for image_path in contents(data_dir/class_name):
-        image = Image.open(image_path).convert(RGB).resize(size, Image.NEAREST)
+        image = Image.open(image_path).convert('RGB').resize(size, Image.NEAREST)
         common.set_input(extractor_interpreter, image)
         extractor_interpreter.invoke()
         embedding = classify.get_scores(extractor_interpreter)
