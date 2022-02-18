@@ -15,7 +15,7 @@ script_dir = Path(__file__).parent.resolve()
 print (script_dir.name)
 model_path = script_dir/'models'/'module.tflite'
 out_model_path = script_dir/'models'/'astropi-day-vs-nite.tflite'
-data_dir = script_dir/'data'
+data_dir = script_dir/'Data'
 labels_path = data_dir/'day-vs-night.txt'
 
 engine = ImprintingEngine(f"{model_path}", keep_classes=False)
