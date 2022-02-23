@@ -3,22 +3,50 @@ from datetime import datetime, timedelta
 from logzero import logger, logfile
 from pathlib import Path
 from time import sleep
+from PIL import Image
+from pycoral.adapters import common
+from pycoral.adapters import classify
+from pycoral.utils.edgetpu import make_interpreter
+from pycoral.utils.dataset import read_label_file
 
+def clasify(image_file):
+    script_dir = Path(__file__).parent.resolve()
+
+    model_file = script_dir/'models/astropi-earth-water-clouds.tflite'
+    data_dir = script_dir/'Data'
+    label_file = data_dir/'earth-water-clouds.txt'
+    #image_file = data_dir/'tests'/'photo_04415_51846074449_o.jpg'
+
+    interpreter = make_interpreter(f"{model_file}")
+    interpreter.allocate_tensors()
+    size = common.input_size(interpreter)
+    image = Image.open(image_file).convert('RGB').resize(size, Image.ANTIALIAS)
+
+    common.set_input(interpreter, image)
+    interpreter.invoke()
+    classes = classify.get_classes(interpreter, top_k=1)
+
+    labels = read_label_file(label_file)
+    for c in classes:
+        print(f'{labels.get(c.id, c.id)} {c.score:.5f}')
+        
 base_folder = Path(__file__).parent.resolve()
 logfile(base_folder/"events.log")
-
-    
- 
 # Create a `datetime` variable to store the start time
 start_time = datetime.now()
 # Create a `datetime` variable to store the current time
 # (these will be almost the same at the start)
 now_time = datetime.now()
-# Run a loop for 2 minutes
-while (now_time < start_time + timedelta(minutes=175)):
+# Run a loop for 175 minutes
+#running_time = 175
+running_time = 168
+index = 0
+while (now_time < start_time + timedelta(minutes=running_time)):
   try:
-    snapshot()
-    sleep(1)
+    index+=1
+    image = snapshot(index)
+    clasify(image)
+    #sleep(1)
     # Update the current time
     now_time = datetime.now() 
   except Exception as e:
