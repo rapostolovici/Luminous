@@ -14,7 +14,7 @@ def contents(folder):
 script_dir = Path(__file__).parent.resolve()
 print (script_dir.name)
 model_path = script_dir/'models'/'mobilenet_v1_1.0_224_l2norm_quant_edgetpu.tflite'
-out_model_path = script_dir/'models'/'astropi-day-vs-nite.tflite'
+out_model_path = script_dir/'models'/'astropi-earth-water-clouds.tflite'
 data_dir = script_dir/'Data'
 labels_path = data_dir/'earth-water-clouds.txt'
 
