@@ -11,7 +11,7 @@ from pycoral.utils.dataset import read_label_file
 from picamera import PiCamera
 from orbit import ISS
 from skyfield.api import load
-
+import csv
 def convert(angle):
     sign, degrees, minutes, seconds = angle.signed_dms()
     exif_angle = f'{degrees:.0f}/1,{minutes:.0f}/1,{seconds*10:.0f}/10'
@@ -24,39 +24,30 @@ def capture(camera, image):
     # Convert the latitude and longitude to EXIF-appropriate representations
     south, exif_latitude = convert(point.latitude)
     west, exif_longitude = convert(point.longitude)
-    # Set the EXIF tags specifying the current location
+    
+# Set the EXIF tags specifying the current location
     camera.exif_tags['GPS.GPSLatitude'] = exif_latitude
     camera.exif_tags['GPS.GPSLatitudeRef'] = "S" if south else "N"
     camera.exif_tags['GPS.GPSLongitude'] = exif_longitude
     camera.exif_tags['GPS.GPSLongitudeRef'] = "W" if west else "E"
     camera.capture(image)
     return image
-
-def snapshot(index):
-  camera = PiCamera()
-  camera.resolution = (2592,1944)
+def snapshot(index,camera):
   base_folder = Path(__file__).parent.resolve()#i think we can use this to identify the 'parent' folder in which we will save the images
   #camera.start_preview() for monitor
   #for i in range(5):#in 3 hours the camera will take maximum 180 pics, 1 pic/min, I think we should count the 5s preview
   sleep(5)
   #camera.capture('/home/pi/image%s.jpg' % i)
   image=capture(camera, f"{base_folder}/image%s.jpg" % index)
-  camera.close()
   return image
-  #came
- #camera.annotate_text = "Hello world!" maybe we can use this to mention the location of the ISS when the pic was taken
-  #camera.stop_preview() preview works just for a monitor
-  #camera.close()
-
-def clasify(image_file):
+def clasify(image_file, data_file):
     script_dir = Path(__file__).parent.resolve()
 
     model_file = script_dir/'models/astropi-earth-water-clouds.tflite'
     data_dir = script_dir/'Data'
     label_file = data_dir/'earth-water-clouds.txt'
     #image_file = data_dir/'tests'/'photo_04415_51846074449_o.jpg'
-
-    interpreter = make_interpreter(f"{model_file}")
+interpreter = make_interpreter(f"{model_file}")
     interpreter.allocate_tensors()
     size = common.input_size(interpreter)
     image = Image.open(image_file).convert('RGB').resize(size, Image.ANTIALIAS)
@@ -64,29 +55,42 @@ def clasify(image_file):
     common.set_input(interpreter, image)
     interpreter.invoke()
     classes = classify.get_classes(interpreter, top_k=1)
-
-    labels = read_label_file(label_file)
+labels = read_label_file(label_file)
+    
     for c in classes:
         print(f'{labels.get(c.id, c.id)} {c.score:.5f}')
-        
+        row = (datetime.now(),image_file, f'{labels.get(c.id, c.id)}', f'{c.score:.5f}')
+        add_csv_data(data_file, row)
+def create_csv(data_file):
+    with open(data_file, 'w') as f:
+        writer = csv.writer(f)
+        header = ("Date/time", "Image", "Label", "Score")
+        writer.writerow(header)
+def add_csv_data(data_file, data):
+    with open(data_file, 'a') as f:
+        writer = csv.writer(f)
+        writer.writerow(data)
 base_folder = Path(__file__).parent.resolve()
+data_file = base_folder/'data.csv'
 logfile(base_folder/"events.log")
 # Create a `datetime` variable to store the start time
 start_time = datetime.now()
 # Create a `datetime` variable to store the current time
 # (these will be almost the same at the start)
 now_time = datetime.now()
-# Run a loop for 175 minutes
-#running_time = 175
+# Run a loop for 168 minutes
 running_time = 168
 index = 0
 camera = PiCamera()
 camera.resolution = (2592,1944)
+
+create_csv(data_file)
+    
 while (now_time < start_time + timedelta(minutes=running_time)):
   try:
     index+=1
-    image = snapshot(index)
-    clasify(image)
+    image = snapshot(index, camera)
+    clasify(image, data_file)
     #sleep(1)
     # Update the current time
     now_time = datetime.now() 
