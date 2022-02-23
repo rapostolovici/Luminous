@@ -24,12 +24,12 @@ def capture(camera, image):
 def snapshot():
 
   camera = PiCamera()
+  cam.resolution = (1296,972)
   base_folder = Path(__file__).parent.resolve()#i think we can use this to identify the 'parent' folder in which we will save the images
   #camera.start_preview() for monitor
   for i in range(5):#in 3 hours the camera will take maximum 180 pics, 1 pic/min, I think we should count the 5s preview
     sleep(5)
     #camera.capture('/home/pi/image%s.jpg' % i)
     capture(camera, f"{base_folder}/image%s.jpg' % i")
-    #camera.annotate_text = "Hello world!" maybe we can use this to mention the location of the ISS when the pic was taken
   #camera.stop_preview() preview works just for a monitor
   camera.close()
