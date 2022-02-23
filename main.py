@@ -8,6 +8,45 @@ from pycoral.adapters import common
 from pycoral.adapters import classify
 from pycoral.utils.edgetpu import make_interpreter
 from pycoral.utils.dataset import read_label_file
+from picamera import PiCamera
+from orbit import ISS
+from skyfield.api import load
+
+def convert(angle):
+    sign, degrees, minutes, seconds = angle.signed_dms()
+    exif_angle = f'{degrees:.0f}/1,{minutes:.0f}/1,{seconds*10:.0f}/10'
+    return sign < 0, exif_angle
+
+def capture(camera, image):
+    """Use `camera` to capture an `image` file with lat/long EXIF data."""
+    point = ISS.coordinates()
+
+    # Convert the latitude and longitude to EXIF-appropriate representations
+    south, exif_latitude = convert(point.latitude)
+    west, exif_longitude = convert(point.longitude)
+    # Set the EXIF tags specifying the current location
+    camera.exif_tags['GPS.GPSLatitude'] = exif_latitude
+    camera.exif_tags['GPS.GPSLatitudeRef'] = "S" if south else "N"
+    camera.exif_tags['GPS.GPSLongitude'] = exif_longitude
+    camera.exif_tags['GPS.GPSLongitudeRef'] = "W" if west else "E"
+    camera.capture(image)
+    return image
+
+def snapshot(index):
+  camera = PiCamera()
+  camera.resolution = (2592,1944)
+  base_folder = Path(__file__).parent.resolve()#i think we can use this to identify the 'parent' folder in which we will save the images
+  #camera.start_preview() for monitor
+  #for i in range(5):#in 3 hours the camera will take maximum 180 pics, 1 pic/min, I think we should count the 5s preview
+  sleep(5)
+  #camera.capture('/home/pi/image%s.jpg' % i)
+  image=capture(camera, f"{base_folder}/image%s.jpg" % index)
+  camera.close()
+  return image
+  #came
+ #camera.annotate_text = "Hello world!" maybe we can use this to mention the location of the ISS when the pic was taken
+  #camera.stop_preview() preview works just for a monitor
+  #camera.close()
 
 def clasify(image_file):
     script_dir = Path(__file__).parent.resolve()
@@ -41,6 +80,8 @@ now_time = datetime.now()
 #running_time = 175
 running_time = 168
 index = 0
+camera = PiCamera()
+camera.resolution = (2592,1944)
 while (now_time < start_time + timedelta(minutes=running_time)):
   try:
     index+=1
@@ -51,3 +92,4 @@ while (now_time < start_time + timedelta(minutes=running_time)):
     now_time = datetime.now() 
   except Exception as e:
     logger.error(f'{e.__class__.__name__}: {e})')
+camera.close()
