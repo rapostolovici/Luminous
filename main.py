@@ -40,7 +40,7 @@ def capture(camera, image):
 def snapshot(index,camera):
   logger.info("Saving the image")
   base_folder = Path(__file__).parent.resolve()
-  sleep(5)
+  sleep(15)
   image=capture(camera, f"{base_folder}/image%s.jpg" % index)
   return image
 
