@@ -46,6 +46,7 @@ def snapshot(index,camera):
 
 #function to classify an image 
 def clasify(image_file,data_file):
+    logger.info("classifying image")
     script_dir = Path(__file__).parent.resolve()
     model_file = script_dir/'models/astropi-earth-water-clouds.tflite'
     data_dir = script_dir/'Data'
@@ -59,12 +60,13 @@ def clasify(image_file,data_file):
     classes = classify.get_classes(interpreter, top_k=1)
     labels = read_label_file(label_file)
     for c in classes:
-        print(f'{labels.get(c.id, c.id)} {c.score:.5f}')
+        logger.info(f'{labels.get(c.id, c.id)} {c.score:.5f}')
         row = (datetime.now(),image_file, f'{labels.get(c.id, c.id)}', f'{c.score:.5f}')
         add_csv_data(data_file, row)
 
 #function to create a csv file
 def create_csv(data_file):
+    logger.info("Creating a csv file")
     with open(data_file, 'w') as f:
         writer = csv.writer(f)
         header = ("Date/time", "Image", "Label", "Score")
@@ -72,6 +74,7 @@ def create_csv(data_file):
 
 #function to add the data in the csv file
 def add_csv_data(data_file, data):
+    logger.info("Adding the data to the csv file")
     with open(data_file, 'a') as f:
         writer = csv.writer(f)
         writer.writerow(data)
